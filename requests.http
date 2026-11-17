@@ -1,0 +1,97 @@
+@baseUrl = http://localhost:4000
+@categoryId = 00000000-0000-4000-8000-000000000000
+@dishId = 00000000-0000-4000-8000-000000000000
+@allergenId = 00000000-0000-4000-8000-000000000000
+
+### Розділи меню (1:M)
+GET {{baseUrl}}/menu-categories HTTP/1.1
+
+### Розділ меню разом зі стравами
+GET {{baseUrl}}/menu-categories/{{categoryId}} HTTP/1.1
+
+### Створення розділу меню
+POST {{baseUrl}}/menu-categories HTTP/1.1
+Content-Type: application/json
+
+{
+  "name": "Гарячі страви",
+  "description": "Основне меню",
+  "sortOrder": 5
+}
+
+### Створення страви з розділом меню та алергенами (cascade: true)
+POST {{baseUrl}}/dishes HTTP/1.1
+Content-Type: application/json
+
+{
+  "title": "Чізкейк Нью-Йорк",
+  "price": 145.90,
+  "weightGrams": 150,
+  "calories": 420,
+  "isSpicy": false,
+  "menuCategoryId": "{{categoryId}}",
+  "allergens": ["Молоко", "Яйця", "Горіхи"]
+}
+
+### Страва за id з вкладеними menuCategory та allergens (relations)
+GET {{baseUrl}}/dishes/{{dishId}} HTTP/1.1
+
+### Заміна набору алергенів страви
+PATCH {{baseUrl}}/dishes/{{dishId}} HTTP/1.1
+Content-Type: application/json
+
+{
+  "allergens": ["Глютен", "Селера"]
+}
+
+### Відв'язати страву від розділу меню
+PATCH {{baseUrl}}/dishes/{{dishId}} HTTP/1.1
+Content-Type: application/json
+
+{
+  "menuCategoryId": null
+}
+
+### Фільтр за назвою алергену (QueryBuilder, без урахування регістру)
+GET {{baseUrl}}/dishes?allergen=молоко&sortBy=price&order=ASC HTTP/1.1
+
+### Фільтр за id алергену
+GET {{baseUrl}}/dishes?allergenId={{allergenId}} HTTP/1.1
+
+### Комбінований фільтр: алерген + розділ меню
+GET {{baseUrl}}/dishes?allergen=Глютен&menuCategoryId={{categoryId}} HTTP/1.1
+
+### Довідник алергенів
+GET {{baseUrl}}/allergens HTTP/1.1
+
+### Алерген разом зі стравами
+GET {{baseUrl}}/allergens/{{allergenId}} HTTP/1.1
+
+### Помилка валідації: дублікати та порожній алерген (400)
+POST {{baseUrl}}/dishes HTTP/1.1
+Content-Type: application/json
+
+{
+  "title": "Некоректна страва",
+  "price": 100,
+  "weightGrams": 200,
+  "calories": 100,
+  "isSpicy": false,
+  "allergens": ["Молоко", "молоко", ""]
+}
+
+### Неіснуючий розділ меню (404)
+POST {{baseUrl}}/dishes HTTP/1.1
+Content-Type: application/json
+
+{
+  "title": "Страва без розділу",
+  "price": 100,
+  "weightGrams": 200,
+  "calories": 300,
+  "isSpicy": false,
+  "menuCategoryId": "00000000-0000-4000-8000-000000000000"
+}
+
+### Видалення розділу меню: у страв menu_category_id стає NULL (ON DELETE SET NULL)
+DELETE {{baseUrl}}/menu-categories/{{categoryId}} HTTP/1.1
